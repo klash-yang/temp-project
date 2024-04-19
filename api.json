@@ -1,0 +1,3655 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "description": "PowerProtect Data Manager Appliance Public RESTful API",
+    "title": "PowerProtect Data Manager Appliance",
+    "version": "v1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Simple local login and logout APIs, provided for login to system when using \nlocal users or identity provider configured directly on the system, such as \nLDAP, AD, or NIS.\n",
+      "x-implementation-note": "This resource definition is also governed by the PowerAPI Style Spec at \nhttps://confluence.cec.lab.emc.com/display/CIAMI/PowerAPI+REST+Style+Specification\n",
+      "x-api-version": "1.0.0"
+    },
+    {
+      "name": "Compliance"
+    },
+    {
+      "name": "Monitoring"
+    },
+    {
+      "name": "Resource Metrics"
+    },
+    {
+      "name": "Storage Management"
+    }
+  ],
+  "paths": {
+    "/dpapi/rest/v1/auth/logout": {
+      "post": {
+        "summary": "Logout",
+        "description": "Logout request.",
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "auth--logout",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "description": "Pass token in authorization header",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/Code204"
+          },
+          "302": {
+            "description": "Found",
+            "headers": {
+              "Location": {
+                "description": "The logout request must be redirected to this URL of the external \nauthentication service that issued the access token presented.\n",
+                "schema": {
+                  "type": "string",
+                  "format": "URL"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Code400"
+          }
+        },
+        "x-powerapi-tags": [
+          "Iam"
+        ]
+      }
+    },
+    "/dpapi/rest/v1/activities": {
+      "get": {
+        "description": "Retrieves a list of all activities. Passing query parameters that are not documented on this page will result in a 400 error when strict REST API validation is enabled. Additional information can be found in the Getting started - Strict REST API validation documentation.\n> This endpoint supports execution by the following roles: Administrator, User, Backup Administrator, Restore Administrator\n\n> This endpoint supports pagination with types: random,serial\n",
+        "operationId": "getActivities",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/filter"
+          },
+          {
+            "$ref": "#/components/parameters/order"
+          },
+          {
+            "$ref": "#/components/parameters/resume_token"
+          },
+          {
+            "description": "A general search text.\nFor example: q=VM_1\nwhere the following fields will be searched for VM_1.\n\nThe following fields are searched:\n\n    name\n    result.summaries\n    result.error.reason\n    result.error.remediation\n    log_info.log_text\n    asset.name\n    asset.type\n    copy.name\n    copy.type\n    dataTarget.name\n    host.name\n    protection_policy.name\n    sourceDataTarget.name\n    serviceLevelAgreement.name\n    owner.name\n    lastUpdateTime\n    createdTime or create_time\n",
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Entity type to group asset-level activities by.",
+            "in": "query",
+            "name": "group-by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Value of entity of type specified in group-by parameter.",
+            "in": "query",
+            "name": "group-by-value",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Activities"
+                }
+              }
+            },
+            "description": "Successfully returned available activity resources."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            },
+            "description": "The request is not valid. Check request parameters."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            },
+            "description": "The requestor is not authenticated."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            },
+            "description": "The requestor does not have required permissions."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                }
+              }
+            },
+            "description": "A server error prevented the completion of the request."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get all activities",
+        "tags": [
+          "Monitoring"
+        ],
+        "x-ppdm-executable-roles": "admin,readonly,backup_admin,restore_admin",
+        "x-ppdm-pagination": "random,serial",
+        "x-powerapi-tags": [
+          "Ppdm"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Activities": {
+        "description": "Get Activities.",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Activity": {
+        "description": "An activity represents a long running asynchronous execution in the system. It can represent a group of jobs, a single job, or a single task.",
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/ActivityActions"
+          },
+          "activity_initiated_type": {
+            "$ref": "#/components/schemas/ActivityInitiatedType"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "average_bytes_transferred": {
+            "description": "This parameter is for running job group only. Average over the bytes transferred by completed jobs inside the job group. For activities that support detailed stats, the average for successfully completed activities over the number of protected assets.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "average_duration": {
+            "description": "This parameter is for running job group only. Average over the completed jobs inside the job group.  For activities that support detailed stats, the average for successfully completed activities over the number of protected assets.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "category": {
+            "$ref": "#/components/schemas/ActivityCategory"
+          },
+          "class_type": {
+            "description": "The type of activity. JOB_GROUP is a group of jobs. JOB is an activity that can be monitored and managed. TASK is a step within a job that can be monitored.",
+            "enum": [
+              "JOB_GROUP",
+              "JOB",
+              "TASK"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "create_time": {
+            "description": "The create time of the activity. Follows ISO8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "destination_system": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "display_id": {
+            "description": "The display_id of the activity. This is only assigned to JOB_GROUP and JOB activity type that do not have a parent_id.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "duration": {
+            "description": "The total time taken for a running or completed activity.",
+            "format": "int64",
+            "type": "integer",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "end_time": {
+            "description": "The end time of the activity. Follows ISO8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "extended_data": {
+            "$ref": "#/components/schemas/ExtendedData"
+          },
+          "external_id": {
+            "description": "If this activity belongs to an external system, the external id points to the activity id on that system.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "failed_to_retrieve_stats": {
+            "items": {
+              "$ref": "#/components/schemas/StatsNotAvailableInfo"
+            },
+            "type": "array"
+          },
+          "group_by_options": {
+            "description": "This property represents a list of options by which asset-level protection activities can be grouped.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "has_children": {
+            "description": "This parameter is true if the activity has a child.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "has_logs": {
+            "description": "This parameter is true if the activity or its child has a log file.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "host": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "id": {
+            "description": "The id of the activity.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": false
+          },
+          "infrastructure_source": {
+            "description": "Information about the source of a virtual machine restore operation.",
+            "type": "string"
+          },
+          "initiated_type": {
+            "deprecated": true,
+            "description": "The activity initiation type. (Deprecated, use activity_initiated_type instead)",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "intervention_group_id": {
+            "description": "References the intervention group that this activity belongs to, or null if it does not belong to any group.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "inventory_source": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "log_export": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "log_info": {
+            "$ref": "#/components/schemas/ActivityLogInfo"
+          },
+          "name": {
+            "description": "The name of the activity.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "next_scheduled_time": {
+            "description": "The next scheduled time of the activity. Follows ISO8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Owner"
+          },
+          "parent_id": {
+            "description": "The parent id of activity.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": false
+          },
+          "progress": {
+            "description": "Value between . and 100 representing % completion for activity.",
+            "format": "int32",
+            "type": "integer",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "progress_issues": {
+            "description": "Issues that arise during the progress of the activity.",
+            "enum": [
+              "NO_REPORTED_ISSUES",
+              "TIMEOUT_ISSUES",
+              "CONNECTION_ISSUES",
+              "STATS_STALL_ISSUES"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "protection_policy": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "restore_group": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "restore_plan": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ActivityResult"
+          },
+          "schedule_info": {
+            "$ref": "#/components/schemas/ScheduleInfo"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ActivitySource"
+          },
+          "source_copy": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "source_storage_system": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "source_system": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "start_time": {
+            "description": "The start time of the activity. Follows ISO8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "state": {
+            "description": "The state of the activity.",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "PENDING_CANCELLATION",
+              "COMPLETED"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "state_details": {
+            "$ref": "#/components/schemas/StateDetails"
+          },
+          "state_summaries": {
+            "$ref": "#/components/schemas/ActivityStateSummaries"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/ActivityStats"
+          },
+          "stats_not_supported_by_app": {
+            "items": {
+              "$ref": "#/components/schemas/StatsNotAvailableInfo"
+            },
+            "type": "array"
+          },
+          "stats_require_agent_upgrade": {
+            "items": {
+              "$ref": "#/components/schemas/StatsNotAvailableInfo"
+            },
+            "type": "array"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityStep"
+            },
+            "type": "array"
+          },
+          "storage_system": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "subcategory": {
+            "description": "The subcategory within a category.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "system_id": {
+            "description": "The resource upon which this activity is performed belongs to this system_id.  As of m.i, this is used in the context of Business Continuity.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "throttling_info": {
+            "$ref": "#/components/schemas/ThrottlingInfo"
+          },
+          "update_time": {
+            "description": "The update time of the activity. Follows ISO8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "username": {
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "required": [
+          "category",
+          "class_type",
+          "create_time",
+          "id",
+          "name",
+          "progress",
+          "state",
+          "update_time"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityActions": {
+        "description": "The options for the activity actions.",
+        "properties": {
+          "cancelable": {
+            "description": "This parameter is true if the activity can be canceled.",
+            "type": "boolean"
+          },
+          "retryable": {
+            "description": "This parameter is true if the activity can be retried.",
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityCategory": {
+        "description": "The category of the activity.",
+        "enum": [
+          "CLOUD_COPY_RECOVER",
+          "CLOUD_DR",
+          "CLOUD_PROTECT",
+          "CLOUD_TIER",
+          "CONFIG",
+          "DATA_MOVEMENT",
+          "DELETE",
+          "DISASTER_RECOVERY",
+          "DISCOVER",
+          "EXPORT_REUSE",
+          "GARBAGE_COLLECTION",
+          "HOST_CONFIGURATION",
+          "INDEX",
+          "INSTANT_ACCESS_ATTACH",
+          "INSTANT_ACCESS_DETACH",
+          "INSTANT_ACCESS_DELETE_SESSION",
+          "MANAGE",
+          "NOTIFY",
+          "PROTECT",
+          "PUSH_UPDATE",
+          "REPLICATE",
+          "RESTORE",
+          "SYSTEM",
+          "VALIDATE"
+        ],
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "ActivityInitiatedType": {
+        "description": "The activity initiation type.",
+        "enum": [
+          "MANUAL",
+          "SCHEDULED",
+          "RETRIED",
+          "SELF_SERVICE"
+        ],
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "ActivityLogInfo": {
+        "description": "The error log information about the failure or warning that occurred for the activity. This can be a long description with some exceptions trace and other debug information.",
+        "properties": {
+          "file_name": {
+            "description": "The path to extended error information.",
+            "type": "string"
+          },
+          "log_text": {
+            "description": "The extended error information.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityMetrics": {
+        "description": "An activity metric presents a list of status counts for a collection of activities.",
+        "properties": {
+          "aggregation": {
+            "deprecated": true,
+            "description": "A list of name-value pairs representing the number of activities in each status or state.\n\nThis object is deprecated, use `statuses_and_states` instead.",
+            "items": {
+              "$ref": "#/components/schemas/NameValuePairInteger"
+            },
+            "type": "array"
+          },
+          "from_create_time": {
+            "description": "The oldest created activity in this time interval.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "statuses_and_states": {
+            "description": "A list of metrics for each state or status.",
+            "items": {
+              "$ref": "#/components/schemas/ActivityStateMetrics"
+            },
+            "type": "array"
+          },
+          "to_create_time": {
+            "description": "The latest created activity in this time interval.",
+            "format": "date-time",
+            "type": "string"
+          }
+        }
+      },
+      "ActivityResult": {
+        "description": "The result of the activity.",
+        "properties": {
+          "bytes_transferred": {
+            "description": "The total data transferred to a storage during an activity in bytes. If the value is ., nothing was transferred. Deprecated.  Use stats.bytes_transferred.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ActivityResultError"
+          },
+          "status": {
+            "description": "The status of a completed activity.",
+            "enum": [
+              "OK",
+              "CANCELED",
+              "FAILED",
+              "OK_WITH_ERRORS",
+              "UNKNOWN",
+              "SKIPPED"
+            ],
+            "type": "string"
+          },
+          "summaries": {
+            "description": "The summary of the activity.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityResultError": {
+        "description": "The error code, reason, remediation, extended_reason, detailed_description and arguments.",
+        "properties": {
+          "arguments": {
+            "items": {
+              "$ref": "#/components/schemas/NameValuePairString"
+            },
+            "type": "array"
+          },
+          "code": {
+            "description": "The error code or message id for message catalog.",
+            "type": "string"
+          },
+          "detailed_description": {
+            "description": "The detailed description from message catalog.",
+            "type": "string"
+          },
+          "extended_reason": {
+            "description": "The extended reason not from the message catalog.",
+            "type": "string"
+          },
+          "message_id": {
+            "description": "The unique message id.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "The error reason or message from message catalog.",
+            "type": "string"
+          },
+          "remediation": {
+            "description": "The remediation or remediation from message catalog.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivitySource": {
+        "description": "The PowerProtect Data Manager Appliance where the activity is initiated from.",
+        "properties": {
+          "description": {
+            "description": "Origin resource description",
+            "type": "string"
+          },
+          "id": {
+            "description": "Origin resource id",
+            "type": "string"
+          },
+          "type": {
+            "description": "Originating source type",
+            "enum": [
+              "DATA_MANAGER",
+              "OPERATING_ENVIRONMENT",
+              "PROTECTION_STORAGE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityStateBucket": {
+        "description": "A bucket the given state or status belongs to.",
+        "enum": [
+          "OK",
+          "WARNING",
+          "ERROR",
+          "RUNNING",
+          "INTERRUPTED",
+          "TOTAL",
+          "NULL"
+        ],
+        "title": "ActivityStateBucket",
+        "type": "string"
+      },
+      "ActivityStateMetrics": {
+        "description": "Metrics for the given activity state or status.",
+        "properties": {
+          "bucket": {
+            "$ref": "#/components/schemas/ActivityStateBucket"
+          },
+          "count": {
+            "description": "The number of activities in the given state or status.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "$ref": "#/components/schemas/ActivityStateMetricsName"
+          },
+          "percentage": {
+            "description": "The percentage of activities at the given state or status, relative to the total amount of activities returned in this response.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "title": "ActivityStateMetrics",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityStateMetricsName": {
+        "description": "The name of the metrics object.",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "PENDING_CANCELLATION",
+          "COMPLETED",
+          "OK",
+          "CANCELED",
+          "FAILED",
+          "OK_WITH_ERRORS",
+          "UNKNOWN",
+          "SKIPPED",
+          "TOTAL"
+        ],
+        "title": "ActivityStateMetricName",
+        "type": "string"
+      },
+      "ActivityStateSummaries": {
+        "description": "The summary of the children activities. Includes state, completion status, and total counts for class_type of JOB_GROUP.",
+        "properties": {
+          "canceled": {
+            "description": "The count of child activities in canceled state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "completed": {
+            "description": "The count of child activities in completed state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "critical_event": {
+            "description": "The count of child activities in the worst (critical/warning/canceled) state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "failed": {
+            "description": "The count of child activities in failed state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "ok": {
+            "description": "The count of child activities in ok state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "ok_with_errors": {
+            "description": "The count of child activities in ok with errors (ok_with_errors) state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "pending_cancellation": {
+            "description": "The count of child activities in pending cancellation state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "queued": {
+            "description": "The count of child activities in queued state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "running": {
+            "description": "The count of child activities in running state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "skipped": {
+            "description": "The count of child activities in skipped state.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "total": {
+            "description": "The total count of the child activities.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "unknown": {
+            "description": "The count of child activities in unknown state.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityStats": {
+        "description": "The activity statistics.",
+        "properties": {
+          "asset_size_in_bytes": {
+            "description": "The asset size in bytes.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "bytes_transferred": {
+            "description": "The total data transferred to storage.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "bytes_transferred_throughput": {
+            "description": "The average bytes transferred for successfully completed activities over the number of protected assets.\n",
+            "format": "double",
+            "type": "number"
+          },
+          "bytes_transferred_throughput_unit_of_time": {
+            "description": "Time used to calculate the throughput.",
+            "type": "string"
+          },
+          "dedupe_ratio": {
+            "description": "Pre-compression bytes divided by post-compression bytes.",
+            "format": "double",
+            "type": "number"
+          },
+          "number_of_agents": {
+            "description": "Number of agents involved at the job group level.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "number_of_assets": {
+            "description": "Total number of assets being processed.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "number_of_protected_assets": {
+            "description": "Total number of assets protected.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "post_comp_bytes": {
+            "description": "Size in bytes after client side compression. Data written to storage.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "pre_comp_bytes": {
+            "description": "Data sent to Boost SDK to write while backup is running or when it is done. Data read from Boost SDK to restore. size in bytes prior to client side compression.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "reduction_percentage": {
+            "description": "Calculated as  (/-post_comp_bytes/pre_comp_bytes)*100.",
+            "format": "double",
+            "type": "number"
+          },
+          "storage_comp_stats": {
+            "$ref": "#/components/schemas/StorageCompStats"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ActivityStep": {
+        "description": "Data model to support Job steps Feature.",
+        "properties": {
+          "description": {
+            "description": "Additional description",
+            "type": "string"
+          },
+          "duration_in_millis": {
+            "description": "Time taken to complete the step in milliseconds.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "end_time": {
+            "description": "End Time of the Step",
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the step. Unique within the list of steps.",
+            "type": "string"
+          },
+          "start_time": {
+            "description": "Start time of the step.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Status of the step",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCESS",
+              "WARNING",
+              "FAILED",
+              "CANCELED",
+              "UNKNOWN",
+              "SKIPPED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "ActivityStep",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Alert": {
+        "description": "Represents a alert resource.",
+        "properties": {
+          "acknowledgement": {
+            "$ref": "#/components/schemas/AlertAcknowledgement"
+          },
+          "activities_count": {
+            "description": "Number of related jobs.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "blocked_actions": {
+            "items": {
+              "enum": [
+                "ACKNOWLEDGE",
+                "ACKNOWLEDGE_EXTERNAL",
+                "UNACKNOWLEDGE",
+                "UNACKNOWLEDGE_EXTERNAL",
+                "EDIT_NOTE",
+                "EDIT_NOTE_EXTERNAL"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "category": {
+            "description": "The category of the alert message.",
+            "enum": [
+              "AGENT",
+              "APPLIANCE_INFRASTRUCTURE_HARDWARE",
+              "APPLIANCE_INFRASTRUCTURE_SERVICES",
+              "APP_HOST_CONFIGURATION",
+              "CAPACITY",
+              "CLOUD_TIER",
+              "COMPLIANCE",
+              "DISCOVER",
+              "EXPORT_LOG",
+              "FILESYSTEM",
+              "FIRMWARE",
+              "LICENSE",
+              "NAS_SERVER_DR",
+              "NETWORK",
+              "PROTECTION",
+              "PROTECTION_COPY",
+              "PROTECTION_INFRASTRUCTURE",
+              "PROTECTION_POLICY",
+              "PROTECTION_RULE",
+              "PROTECTION_SOURCE",
+              "PUSH_UPDATE",
+              "REPLICATION",
+              "REPORTING",
+              "RESTORE",
+              "RESTORE_PLAN",
+              "SECURITY",
+              "SELF_SERVICE",
+              "SERVER_DR",
+              "STORAGE",
+              "SYSTEM"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "detail_summaries": {
+            "deprecated": true,
+            "description": "The details from individual task. This field is deprecated. Use `activities_count` to get the number of associated activities, or query the activities API to get more information.",
+            "items": {
+              "$ref": "#/components/schemas/AlertDetailSummary"
+            },
+            "type": "array"
+          },
+          "detailed_description": {
+            "description": "The detailed description of the alert message.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "email": {
+            "description": "This parameter is true if the alert message can generate an email.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": false
+          },
+          "esrs": {
+            "description": "This parameter is true if the alert message is sent by esrs to  the support team.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "excluded": {
+            "description": "If the alert message is displayed in the Alert UI by default, the value of this property is false.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "external_id": {
+            "description": "If this alert belongs to an external system, the external id points to the alert id on that system.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "hardware_info": {
+            "$ref": "#/components/schemas/HardwareInfo"
+          },
+          "id": {
+            "description": "Id of the alert.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": false
+          },
+          "job_id": {
+            "description": "The job id associated to the alert message.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "last_occurrence_time": {
+            "description": "The date and time when the most recent alert message is received.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "message": {
+            "description": "The message that the variable values are substituted with message arguments.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "message_args": {
+            "description": "The alert message arguments are the values for any substitution variables that are defined as part of the message.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "message_id": {
+            "description": "The unique message id.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "posted_time": {
+            "description": "The created time of the alert message.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "response_action": {
+            "description": "The response action for this alert message.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "severity": {
+            "description": "The severity of the alert message.",
+            "enum": [
+              "CRITICAL",
+              "WARNING",
+              "INFORMATIONAL"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/MessageSource"
+          },
+          "support_details": {
+            "description": "Additional low level details for support.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "task_id": {
+            "description": "The task id that is associated with the alert message.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "user_note": {
+            "$ref": "#/components/schemas/UserNote"
+          },
+          "visibility": {
+            "description": "This is true if the alert message is visible for the users.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "AlertAcknowledgement": {
+        "description": "The acknowledgement details of an alert.",
+        "properties": {
+          "acknowledge_by": {
+            "description": "The name of the user who acknowledged the alert message.",
+            "type": "string"
+          },
+          "acknowledge_state": {
+            "description": "The acknowledgement state.",
+            "enum": [
+              "ACKNOWLEDGED",
+              "UNACKNOWLEDGED"
+            ],
+            "type": "string"
+          },
+          "acknowledge_time": {
+            "description": "The time the message was acknowledged. Follows ISO 8601.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "acknowledge_state"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "AlertDetailSummary": {
+        "deprecated": true,
+        "description": "The details from individual failed activities within the alert.",
+        "properties": {
+          "summary": {
+            "description": "The description of the failed activity.",
+            "type": "string"
+          },
+          "task_id": {
+            "description": "The activity id that failed.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "AlertMetrics": {
+        "description": "Alert metrics that include summaries of unacknowledged counts per severity.",
+        "properties": {
+          "acknowledged_critical_count": {
+            "description": "Number of acknowledged critical alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "acknowledged_informational_count": {
+            "description": "Number of acknowledged informational alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "acknowledged_warning_count": {
+            "description": "Number of acknowledged warning alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "all_critical_count": {
+            "description": "Number of all critical alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "all_informational_count": {
+            "description": "Number of all informational alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "all_warning_count": {
+            "description": "Number of all warning alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "from_post_time": {
+            "description": "The oldest alert posted in this time interval.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true
+          },
+          "to_post_time": {
+            "description": "The latest alert posted in this time interval.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true
+          },
+          "total_acknowledged_count": {
+            "description": "Total number of acknowledged alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_all_count": {
+            "description": "Total number of all alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_unacknowledged_count": {
+            "description": "Total number of unacknowledged alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "unacknowledged_critical_count": {
+            "description": "Number of unacknowledged critical alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "unacknowledged_informational_count": {
+            "description": "Number of unacknowledged informational alerts.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "unacknowledged_warning_count": {
+            "description": "Number of unacknowledged warning alerts.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Alerts": {
+        "description": "Get Alerts.",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "AssetMetric": {
+        "description": "Metrics for the asset.",
+        "properties": {
+          "in_compliance_asset_count": {
+            "description": "The number of assets that are in compliance.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "out_of_compliance_asset_count": {
+            "description": "The number of assets that are out of compliance.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "type": {
+            "description": "The type of asset.",
+            "enum": [
+              "VMAX_STORAGE_GROUP",
+              "POWERSTORE_BLOCK",
+              "VMWARE_VIRTUAL_MACHINE",
+              "ORACLE_DATABASE",
+              "MICROSOFT_SQL_DATABASE",
+              "FILE_SYSTEM",
+              "KUBERNETES",
+              "SAP_HANA_DATABASE",
+              "MICROSOFT_EXCHANGE_DATABASE",
+              "NAS_SHARE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "AssetProtectionMetrics": {
+        "description": "Response from asset protection metrics API : /api/v2/asset-protection-metrics",
+        "properties": {
+          "content_summary": {
+            "description": "Asset protection metrics aggregated across all of the asset types.",
+            "properties": {
+              "maximums": {
+                "$ref": "#/components/schemas/AssetProtectionMetricsCollection"
+              },
+              "totals": {
+                "$ref": "#/components/schemas/AssetProtectionMetricsCollection"
+              }
+            },
+            "type": "object",
+            "additionalProperties": false
+          },
+          "contents": {
+            "description": "Asset protection metrics collection for each asset type. The \"bucket_name\" is the asset type, such as \"FILE_SYSTEM\", \"NAS_SHARE\", \"MICROSOFT_SQL_DATABASE\" or \"VMWARE_VIRTUAL_MACHINE\".",
+            "items": {
+              "$ref": "#/components/schemas/AssetProtectionMetricsCollection"
+            },
+            "type": "array"
+          }
+        }
+      },
+      "AssetProtectionMetricsCollection": {
+        "description": "The asset protection metrics count and size statistics as well as their relative percentages for a particular metrics collection. Each collection is broken down into the four groups: \"protected\", \"unprotected\", \"excluded\" and \"total\". The \"protected\" group contains the statistics for those assets whose \"protectionStatus\" property is \"protected\". The \"unprotected\" group contains the statistics for those assets whose \"protectionStatus\" property is \"unprotected\". The \"excluded\" group contains the statistics for those assets whose \"protectionStatus\" property is \"excluded\". The \"total\" group contains the sum of the count and size statistics of the other three groups, but does not include any percentage values. When used with the \"totals\" collection, this contains the sum of the associated metrics across all the asset types listed under \"contents\". The \"bucket_name\" is always \"TOTALS\". When used with the \"maximums\" collection, this contains the maximum values of the associated metrics across all the asset types listed under \"contents\". The \"bucket_name\" is always \"MAXIMUMS\" and the percentage values are not included in any of its groups.",
+        "properties": {
+          "bucket_name": {
+            "description": "Name of asset protection metrics collection.",
+            "type": "string"
+          },
+          "excluded": {
+            "$ref": "#/components/schemas/AssetProtectionMetricsGroup"
+          },
+          "protected": {
+            "$ref": "#/components/schemas/AssetProtectionMetricsGroup"
+          },
+          "total": {
+            "$ref": "#/components/schemas/AssetProtectionMetricsGroup"
+          },
+          "unprotected": {
+            "$ref": "#/components/schemas/AssetProtectionMetricsGroup"
+          }
+        }
+      },
+      "AssetProtectionMetricsGroup": {
+        "description": "The asset protection metrics count and size statistics as well as their relative percentages for a particular metrics group.",
+        "properties": {
+          "count": {
+            "description": "Count of assets in this metrics group.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "count_percentage": {
+            "description": "Percentage of counts of assets in this metrics group.",
+            "format": "double",
+            "type": "number"
+          },
+          "size": {
+            "description": "Size in bytes (or capacity) of assets in this metrics group.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "size_percentage": {
+            "description": "Percentage of size in bytes (or capacity) of assets in this metrics group.",
+            "format": "double",
+            "type": "number"
+          }
+        }
+      },
+      "Capacities": {
+        "description": "Storage system capacities response",
+        "properties": {
+          "capacities": {
+            "items": {
+              "$ref": "#/components/schemas/StorageSystemCapacity"
+            },
+            "type": "array"
+          }
+        },
+        "title": "Capacities",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Capacity": {
+        "properties": {
+          "capacity_status": {
+            "$ref": "#/components/schemas/CapacityStatus"
+          },
+          "compression_factor": {
+            "description": "Compression factor of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "licensed_utilization": {
+            "description": "Phycisal licensed capacity utilization of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "percent_used": {
+            "description": "Percentage of capacity used (capacity utilization) of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "reduction_percentage": {
+            "description": "Reduction percentage of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_licensed_size": {
+            "description": "Total physical licensed capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_logical_size": {
+            "description": "Total logical capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_logical_used": {
+            "description": "Total logical capacity used in the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_physical_size": {
+            "description": "Total physical capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_physical_used": {
+            "description": "Total physical capacity used in the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TierType"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "CapacityStatus": {
+        "description": "Capacity status of the PowerProtect DD system by tier type.",
+        "enum": [
+          "GOOD",
+          "FAIR",
+          "POOR"
+        ],
+        "title": "CapacityStatus",
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "CapacityStatusSummary": {
+        "description": "Capacity status summary of the PowerProtect DD system.",
+        "properties": {
+          "fair_count": {
+            "description": "Count for FAIR capacity status of the PowerProtect DD systems.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "good_count": {
+            "description": "Count for GOOD capacity status of the PowerProtect DD systems.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "poor_count": {
+            "description": "Count for POOR capacity status of the PowerProtect DD systems.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_count": {
+            "description": "Total count of PowerProtect DD systems with a valid capacity status.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TierType"
+          }
+        },
+        "title": "CapacityStatusSummary",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "DiscoveryResult": {
+        "description": "Result of the discovery activity.",
+        "properties": {
+          "error": {
+            "description": "Error description for the discovery task.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "message_id": {
+            "description": "Id of the message for the discovery task.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "remediation": {
+            "description": "Remediation for the discovery task.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "status": {
+            "description": "Status of the discovery task. Valid values are following:\n- ok\n- canceled\n- failed\n- OK_WITH_ERRORS.",
+            "enum": [
+              "OK",
+              "CANCELED",
+              "FAILED",
+              "OK_WITH_ERRORS",
+              "UNKNOWN"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "summaries": {
+            "description": "Summaries of the discovery task.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "EmbeddedIdName": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ErrorResponseObject": {
+        "description": "The error message response.",
+        "properties": {
+          "code": {
+            "description": "The error code.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "path": {
+            "description": "The path the error applies to.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "The reason for the error code.",
+            "type": "string"
+          },
+          "remediation": {
+            "description": "The remediation for the error code.",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "The time of the error.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ExtendedData": {
+        "description": "Extended data with an array of key/value pairs for generic use.",
+        "properties": {
+          "key_values": {
+            "items": {
+              "$ref": "#/components/schemas/KeyValuesPair"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ExternalNotification": {
+        "description": "Configure alert notifications with the categories and severities.",
+        "properties": {
+          "category_list": {
+            "description": "Enum of MessageCategory for filtering.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "disabled": {
+            "description": "User can enable or disable notifications.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "emails": {
+            "description": "List of email addresses to send the alerts to.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "id": {
+            "description": "External notification id.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": false
+          },
+          "last_alert_match_time": {
+            "description": "Time that the last alert was created meeting this criteria.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "last_notification_time": {
+            "description": "This parameter is the date and time of the last transmission.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true
+          },
+          "message_id_list": {
+            "description": "Specific message_id for filtering.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "description": "Name of notification configuration.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "notification_window": {
+            "description": "This is the time frame for the PowerProtect Data Manager Appliance user to wait before sending more notifications.",
+            "format": "int32",
+            "type": "integer",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "severity_list": {
+            "description": "Enum of MessageSeverity for filtering.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "subject_override": {
+            "description": "Customer-provided subject line for outgoing notifications.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "required": [
+          "emails",
+          "name"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ExternalNotifications": {
+        "description": "Get External Notifications.",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalNotification"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "HardwareInfo": {
+        "description": "External hardware information. Includes part name, type (Disk, IOModule, RAM, and so on), model, and revision (firmware version).  Also includes the chassis id that contains the part and its position within the chassis.",
+        "properties": {
+          "chassis_id": {
+            "type": "string"
+          },
+          "chassis_position": {
+            "type": "string"
+          },
+          "part_identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/PartIdentifier"
+            },
+            "type": "array"
+          },
+          "part_model": {
+            "type": "string"
+          },
+          "part_name": {
+            "type": "string"
+          },
+          "part_rev": {
+            "type": "string"
+          },
+          "part_type": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthCategoryType": {
+        "description": "The health category.",
+        "enum": [
+          "CONFIGURATION",
+          "COMPONENTS",
+          "DATA_PROTECTION",
+          "CAPACITY",
+          "PERFORMANCE"
+        ],
+        "title": "HealthCategoryType",
+        "type": "string"
+      },
+      "HealthComponentType": {
+        "description": "The health component.",
+        "enum": [
+          "OVERALL_SYSTEM",
+          "DATA_MANAGER",
+          "OPERATING_ENVIRONMENT",
+          "PROTECTION_STORAGE"
+        ],
+        "title": "HealthComponentType",
+        "type": "string"
+      },
+      "HealthIssueSeverity": {
+        "description": "Represents health issue severity in the system.",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH"
+        ],
+        "title": "HealthIssueSeverity",
+        "type": "string"
+      },
+      "HealthStatus": {
+        "description": "The health status.",
+        "enum": [
+          "GOOD",
+          "FAIR",
+          "POOR"
+        ],
+        "title": "HealthStatus",
+        "type": "string"
+      },
+      "InventorySourceTypeEnum": {
+        "description": "The type of inventory_source",
+        "enum": [
+          "APP_HOST",
+          "CLOUD_DIRECTOR",
+          "CLOUD_SNAPSHOT_MANAGER",
+          "CDR",
+          "DATA_MANAGER_APPLIANCE",
+          "DATA_MANAGER_APPLIANCE_CLUSTER",
+          "DATADOMAINMANAGEMENTCENTER",
+          "DDSYSTEM",
+          "DEFAULTAPPGROUP",
+          "EXTERNALDATADOMAIN",
+          "GENERICNASMANAGEMENTSERVER",
+          "KUBERNETES",
+          "ORACLEGROUP",
+          "POWERSCALEMANAGEMENTSERVER",
+          "POWERSTOREMANAGEMENTSERVER",
+          "PPDM",
+          "SQLGROUPS",
+          "UNITYMANAGEMENTSERVER",
+          "UNISPHERE",
+          "VCENTER"
+        ],
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "KeyValuesPair": {
+        "description": "A pair of key and list of values.",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MessageBulk": {
+        "description": "Represents a request to acknowledge alerts.",
+        "properties": {
+          "acknowledgement": {
+            "$ref": "#/components/schemas/AlertAcknowledgement"
+          },
+          "acknowledgement_count": {
+            "description": "Number of alerts that were successfully updated with acknowledgment.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "acknowledgement_received_count": {
+            "description": "The number of alerts accepted from request.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "bulk_results": {
+            "items": {
+              "$ref": "#/components/schemas/MessageBulkResult"
+            },
+            "type": "array"
+          },
+          "message_ids": {
+            "description": "List of alert IDs to acknowledge.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "acknowledgement",
+          "message_ids"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MessageBulkResult": {
+        "description": "The response object from bulk operations.",
+        "properties": {
+          "acknowledgement": {
+            "$ref": "#/components/schemas/AlertAcknowledgement"
+          },
+          "error_response_object": {
+            "$ref": "#/components/schemas/ErrorResponseObject"
+          },
+          "id": {
+            "description": "Message id for failed update.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MessageSource": {
+        "description": "The PowerProtect Data Manager Appliance from which the alert message is initiated.",
+        "properties": {
+          "description": {
+            "description": "Origin resource description",
+            "type": "string"
+          },
+          "id": {
+            "description": "Origin resource id",
+            "type": "string"
+          },
+          "type": {
+            "description": "Originating source type",
+            "enum": [
+              "DATA_MANAGER",
+              "OPERATING_ENVIRONMENT",
+              "PROTECTION_STORAGE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "NameValuePairInteger": {
+        "description": "Name value pair. The value type is integer.",
+        "properties": {
+          "name": {
+            "description": "Name of the value.",
+            "type": "string"
+          },
+          "value": {
+            "description": "Value of the name. type of integer.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "NameValuePairString": {
+        "description": "Name value pair. The value type is string.",
+        "properties": {
+          "name": {
+            "description": "Name of the value.",
+            "type": "string"
+          },
+          "value": {
+            "description": "Value of the name. type of string.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "NetworkPurpose": {
+        "description": "Indicates the purpose of a network.",
+        "enum": [
+          "MANAGEMENT",
+          "DATA",
+          "MANAGEMENT_DATA"
+        ],
+        "title": "NetworkPurpose",
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "Owner": {
+        "description": "The owner of the activity.",
+        "properties": {
+          "name": {
+            "description": "Name of the owner.",
+            "type": "string"
+          },
+          "owner_resource": {
+            "$ref": "#/components/schemas/OwnerResource"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "OwnerResource": {
+        "description": "Information about owner.",
+        "properties": {
+          "id": {
+            "description": "Id of the owner resource.",
+            "type": "string"
+          },
+          "resource_type": {
+            "description": "Type of the owner resource.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PartIdentifier": {
+        "description": "Identifiers that exist for the part.",
+        "properties": {
+          "part_id_type": {
+            "type": "string"
+          },
+          "part_value": {
+            "type": "string"
+          }
+        }
+      },
+      "PreferredInterface": {
+        "properties": {
+          "network_address": {
+            "type": "string"
+          },
+          "network_label": {
+            "type": "string"
+          },
+          "network_name": {
+            "type": "string"
+          },
+          "purposes": {
+            "items": {
+              "$ref": "#/components/schemas/NetworkPurpose"
+            },
+            "type": "array"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/Readiness"
+          },
+          "scope": {
+            "enum": [
+              "PUBLIC",
+              "PRIVATE"
+            ],
+            "type": "string"
+          },
+          "speed": {
+            "format": "double",
+            "type": "number"
+          },
+          "tags": {
+            "description": "The tags for the virtual network.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ProtectionDetail": {
+        "description": "Response from activity details API : GET /api/v2/protectionDetails",
+        "properties": {
+          "asset_history_id": {
+            "description": "The asset associated with the protection.",
+            "type": "string"
+          },
+          "asset_id": {
+            "type": "string"
+          },
+          "backup_level": {
+            "description": "To indicate the backup type, adhoc or scheduled.",
+            "type": "string"
+          },
+          "bytes_transferred": {
+            "description": "Transfer rate value.",
+            "format": "int64",
+            "type": "number"
+          },
+          "completion_status": {
+            "description": "The result status when the protection activity completed.",
+            "enum": [
+              "FAILED",
+              "SUCCESS"
+            ],
+            "type": "string"
+          },
+          "completion_time": {
+            "description": "When the protection activity was completed.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "copy_id": {
+            "description": "A unique copy id. Only DD copies are supported.",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "When this protection detail was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "data_target_id": {
+            "description": "The data target associated with the protection.",
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ProtectionDetailError"
+          },
+          "id": {
+            "description": "The unique id of this protection detail.",
+            "type": "string"
+          },
+          "initiated_type": {
+            "description": "To indicate the backup type, adhoc or scheduled.",
+            "type": "string"
+          },
+          "next_scheduled_time": {
+            "description": "The next scheduled time for protection details",
+            "format": "date-time",
+            "type": "string"
+          },
+          "plc_id": {
+            "description": "The protection policy that is associated with the protection.",
+            "type": "string"
+          },
+          "protection_policy_id": {
+            "description": "The protection policy that is associated with the protection.",
+            "type": "string"
+          },
+          "replicated_copy_id": {
+            "description": "A unique replicated copy id.",
+            "type": "string"
+          },
+          "replicated_data_target_id": {
+            "description": "The replicated data target associated with the protection.",
+            "type": "string"
+          },
+          "stage_id": {
+            "description": "The stage associated with the protection.",
+            "type": "string"
+          },
+          "start_time": {
+            "description": "When the protection activity was started.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "transfer_duration": {
+            "description": "Transfer rate value.",
+            "format": "int64",
+            "type": "number"
+          },
+          "type": {
+            "description": "The type of protection activity that was performed.",
+            "enum": [
+              "PROTECT",
+              "REPLICATE",
+              "CLOUD_TIER",
+              "PROMOTE",
+              "CLOUD_PROTECT"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ProtectionDetailError": {
+        "description": "The information for error of protection details.",
+        "properties": {
+          "code": {
+            "description": "The error code for protection details.",
+            "type": "string"
+          },
+          "extended_reason": {
+            "description": "The extended reason for protection details.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "The error reason for protection details.",
+            "type": "string"
+          },
+          "remediation": {
+            "description": "The remediation message for protection details.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ProtectionDetails": {
+        "description": "Get all protection details in the PowerProtect Data Manager Appliance system.",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ProtectionDetail"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "PutAlertAcknowledgement": {
+        "description": "Put Alert acknowledgement.",
+        "properties": {
+          "acknowledgement": {
+            "$ref": "#/components/schemas/AlertAcknowledgement"
+          },
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Readiness": {
+        "description": "Indicates if the resource is ready to be used.",
+        "enum": [
+          "READY",
+          "NOT_READY",
+          "MIGRATING"
+        ],
+        "title": "Readiness",
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "ReplicationEncryptionMode": {
+        "description": "Replication Encryption Mode",
+        "enum": [
+          "ENABLED",
+          "DISABLED",
+          "MIXED",
+          "NOT_SUPPORTED"
+        ],
+        "title": "ReplicationEncryptionMode",
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "Resource": {
+        "description": "The reference to a resource that is associated with this activity.",
+        "properties": {
+          "id": {
+            "description": "The reference id.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The reference name.",
+            "type": "string"
+          },
+          "type": {
+            "description": "The reference type.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ScheduleInfo": {
+        "description": "Protection schedule details",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "next_scheduled_time": {
+            "description": "The next scheduled time for the activity. Follows the ISO 8601 date format.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "type": {
+            "enum": [
+              "MINUTELY",
+              "HOURLY",
+              "DAILY",
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        }
+      },
+      "SlaMetrics": {
+        "description": "REST model for SLA metrics.",
+        "properties": {
+          "asset_metrics": {
+            "description": "Asset-level metrics.",
+            "items": {
+              "$ref": "#/components/schemas/AssetMetric"
+            },
+            "type": "array"
+          },
+          "end_time": {
+            "description": "Metrics end time.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "failed_sla_count": {
+            "description": "Number of failed Service Level Agreements.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "in_compliance_asset_count": {
+            "description": "Number of assets in compliance.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "in_compliance_policy_count": {
+            "description": "Number of policies in compliance.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "out_of_compliance_asset_capacity": {
+            "description": "Capacity of assets out of compliance.",
+            "format": "double",
+            "type": "number"
+          },
+          "out_of_compliance_asset_count": {
+            "description": "Number of assets out of compliance.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "out_of_compliance_policy_count": {
+            "description": "Number of policies out of compliance.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "start_time": {
+            "description": "Metrics start time.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "Source": {
+        "description": "Source of the notification.",
+        "properties": {
+          "type": {
+            "enum": [
+              "DATA_MANAGER",
+              "OPERATING_ENVIRONMENT",
+              "PROTECTION_STORAGE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true,
+        "additionalProperties": false
+      },
+      "StateDetails": {
+        "description": "Data model to provide additional state information",
+        "properties": {
+          "message": {
+            "description": "Detailed state information",
+            "type": "string"
+          }
+        }
+      },
+      "StatsNotAvailableInfo": {
+        "description": "Information about hosts relative to support for statistics.  A host may require an agent upgrade or the application may not support statistics.",
+        "properties": {
+          "asset_id": {
+            "description": "For future use.",
+            "type": "string"
+          },
+          "asset_name": {
+            "description": "For future use.",
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageCompStats": {
+        "description": "The statistic from storage.",
+        "properties": {
+          "cumulative_size_in_bytes": {
+            "description": "Cumulative file size.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "deduped_pre_comp_size_in_bytes": {
+            "description": "Size after removing duplication and before local compression.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "redundant_segments_count": {
+            "description": "Redundant segments (already existing on protection storage) in file.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "segments_count": {
+            "description": "Total segments in file.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageMetricsDetail": {
+        "description": "The aggregation of all storage metrics.",
+        "properties": {
+          "available_percentage": {
+            "description": "The percent of storage available.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "available_size": {
+            "description": "The amount of storage available.",
+            "format": "double",
+            "type": "number"
+          },
+          "system_name": {
+            "description": "The system name.",
+            "type": "string"
+          },
+          "total_size": {
+            "description": "Total amount of storage",
+            "format": "double",
+            "type": "number"
+          },
+          "used_percentage": {
+            "description": "The percentage of the storage used.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "used_size": {
+            "description": "The amount of storage used.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageMetricsStats": {
+        "properties": {
+          "critical_systems_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "non_critical_systems_count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "systems_by_space_utilization": {
+            "items": {
+              "$ref": "#/components/schemas/StorageMetricsDetail"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystem": {
+        "description": "Information of the storage system.",
+        "properties": {
+          "embedded": {
+            "$ref": "#/components/schemas/StorageSystemEmbedded"
+          },
+          "capacity_utilization": {
+            "description": "Physical capacity utilization of the storage system.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "created_at": {
+            "description": "Create time of the storage system.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "dd_location_id": {
+            "description": "Id of location for the PowerProtect DD storage system.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "description": {
+            "description": "Storage System description.",
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/StorageSystemDetails"
+          },
+          "id": {
+            "description": "Id of the storage system in Elasticsearch. Use in GET operations or requests that accept id in the path.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "inventory_source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/StorageSystemInventorySource"
+            },
+            "type": "array"
+          },
+          "last_discovered": {
+            "description": "Last discovery starts time of the storage system.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "last_discovery_at": {
+            "description": "Last discovery end time of the storage system.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "last_discovery_result": {
+            "$ref": "#/components/schemas/DiscoveryResult"
+          },
+          "last_discovery_status": {
+            "description": "Status of the last discovery for the storage system. Valid values are following:\n- NEW\n- DETECTED\n- NOT_DETECTED\n- DELETED",
+            "enum": [
+              "NEW",
+              "DETECTED",
+              "NOT_DETECTED",
+              "DELETED"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "last_discovery_task_id": {
+            "description": "Last discovery task id of the storage system.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "local": {
+            "description": "Location of the storage system. True for internal storage system and false for external storage system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "location_id": {
+            "description": "Id of location for the storage system.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "name": {
+            "description": "Name of the storage system. It can be used to show on UI page.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "operating_system": {
+            "$ref": "#/components/schemas/StorageSystemOperatingSystem"
+          },
+          "parent_id": {
+            "description": "If storage system is a member of a DD system pool, this value is the id of the storage system that represents the pool.",
+            "type": "string",
+            "x-ppdm-filter": true
+          },
+          "purpose": {
+            "description": "Indicates how the storage system is used.",
+            "enum": [
+              "NAS_SHARE",
+              "POWERSTORE_BLOCK",
+              "VAULT",
+              "POWER_MAX_BLOCK"
+            ],
+            "type": "string"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/Readiness"
+          },
+          "replication_encryption_mode": {
+            "$ref": "#/components/schemas/ReplicationEncryptionMode"
+          },
+          "retention_lock_modes": {
+            "description": "A set of retention lock modes that are licensed and enabled on a DD system. Valid values are GOVERNANCE or COMPLIANCE (or both).",
+            "items": {
+              "enum": [
+                "GOVERNANCE",
+                "COMPLIANCE"
+              ],
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "type": {
+            "description": "Type of the storage system.",
+            "enum": [
+              "VMAX_STORAGE_SYSTEM",
+              "DATA_DOMAIN_SYSTEM",
+              "CDR_REGION_SYSTEM",
+              "GENERIC_NAS_APPLIANCE",
+              "POWER_STORE_APPLIANCE",
+              "UNITY_APPLIANCE",
+              "DATA_DOMAIN_APPLIANCE_POOL",
+              "POWER_SCALE_APPLIANCE",
+              "POWER_MAX_STORAGE_SYSTEM"
+            ],
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "unsupported_features": {
+            "description": "If set, indicates if there are any unsupported features.",
+            "items": {
+              "enum": [
+                "DISCOVERY",
+                "STORAGE_TARGET_CREATION",
+                "NETWORK_NAMING",
+                "PREFERRED_NETWORK_SELECTION",
+                "GRANULAR_RESTORE"
+              ],
+              "readOnly": true,
+              "type": "string"
+            },
+            "readOnly": true,
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Update time of the storage system.",
+            "format": "date-time",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "vproxy_refs": {
+            "items": {
+              "$ref": "#/components/schemas/StorageSystemVproxy"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemCapacity": {
+        "properties": {
+          "capacity_status": {
+            "description": "Capacity status of the PowerProtect DD system by tier type.",
+            "enum": [
+              "GOOD",
+              "FAIR",
+              "POOR"
+            ],
+            "type": "string"
+          },
+          "compression_factor": {
+            "description": "Compression factor of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "licensed_utilization": {
+            "description": "Physical licensed capacity utilization of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "percent_used": {
+            "description": "Percentage of capacity used (capacity utilization) of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "reduction_percentage": {
+            "description": "Reduction percentage of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_licensed_size": {
+            "description": "Total physical licensed capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_logical_size": {
+            "description": "Total logical capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_logical_used": {
+            "description": "Total logical capacity used in the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_physical_size": {
+            "description": "Total physical capacity of the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "total_physical_used": {
+            "description": "Total physical capacity used in the PowerProtect DD system by tier type.",
+            "format": "double",
+            "type": "number"
+          },
+          "type": {
+            "description": "Tier type of the PowerProtect DD system.",
+            "enum": [
+              "ACTIVE",
+              "CLOUD",
+              "COMBINED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemDataDomain": {
+        "description": "Details of the PowerProtect DD system.",
+        "properties": {
+          "capacities": {
+            "items": {
+              "$ref": "#/components/schemas/Capacity"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "capacity_quotas_supported": {
+            "description": "Indicates if capacity quota is supported.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "cloud_enabled": {
+            "description": "Whether Cloud is enabled or not on the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "cloud_tier_licensed": {
+            "description": "Cloud Tier License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "compression_factor": {
+            "deprecated": true,
+            "description": "Compression factor of the PowerProtect DD system.\n- Example: /.44E-p",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "datacenter_description": {
+            "description": "Description of the data center for the system pool.",
+            "type": "string"
+          },
+          "datacenter_name": {
+            "description": "Name of the system pool's datacenter.",
+            "type": "string"
+          },
+          "ddboost_licensed": {
+            "description": "DDBoost License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "encryption_licensed": {
+            "description": "Encryption License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "model": {
+            "description": "Model of the PowerProtect DD system.\n- Example: DD VE version p..",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "percent_used": {
+            "deprecated": true,
+            "description": "Percent of capacity used for the PowerProtect DD system.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "preferred_interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/PreferredInterface"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "preferred_network_supported": {
+            "description": "Indicates if preferred network interface is supported.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "replication_encryption_enabled": {
+            "description": "Encryption of replication for the PowerProtect DD system. True for enabling the encryption and false for disabling the encryption.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "replication_licensed": {
+            "description": "Replication License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "retention_lock_compliance_enabled": {
+            "type": "boolean"
+          },
+          "retention_lock_compliance_licensed": {
+            "description": "Retention Lock Compliance License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "retention_lock_governance_licensed": {
+            "description": "Retention Lock Governance License of the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "retention_lock_supported": {
+            "description": "Indicates if retention lock is supported.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "serial_number": {
+            "description": "Serial number of the PowerProtect DD system.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "stream_quotas_supported": {
+            "description": "Indicates if stream quota is supported.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "total_size": {
+            "deprecated": true,
+            "description": "The total capacity in bytes of the PowerProtect DD system.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_used": {
+            "deprecated": true,
+            "description": "The total used capacity in bytes of the PowerProtect DD system.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "user_creds_id": {
+            "type": "string"
+          },
+          "vdisk_enabled": {
+            "description": "Whether vDisk service is enabled or not on the PowerProtect DD system.",
+            "type": "boolean",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "version": {
+            "description": "Version of the PowerProtect DD system.\n- Example: PowerProtect DD system OS t.i...i-615548",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemDetails": {
+        "description": "Details of the storage system.",
+        "properties": {
+          "data_domain": {
+            "$ref": "#/components/schemas/StorageSystemDataDomain"
+          },
+          "recover_point": {
+            "$ref": "#/components/schemas/StorageSystemRecoverPoint"
+          },
+          "vmax": {
+            "$ref": "#/components/schemas/StorageSystemVmax"
+          },
+          "xio": {
+            "$ref": "#/components/schemas/StorageSystemXio"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemEmbedded": {
+        "properties": {
+          "inventory_source": {
+            "$ref": "#/components/schemas/EmbeddedIdName"
+          },
+          "location": {
+            "$ref": "#/components/schemas/EmbeddedIdName"
+          }
+        },
+        "readOnly": true,
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemInventorySource": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "preferred": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/InventorySourceTypeEnum"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemMetrics": {
+        "description": "Metrics for the PowerProtect DD system.",
+        "properties": {
+          "capacity_status_summary": {
+            "items": {
+              "$ref": "#/components/schemas/CapacityStatusSummary"
+            },
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "title": "StorageSystemMetrics",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemOperatingSystem": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemRecoverPoint": {
+        "description": "Details of the recover point.",
+        "properties": {
+          "protected_space": {
+            "description": "Protected space of recover_point.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "serial_number": {
+            "description": "Serial number of recover_point.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_capacity_managed": {
+            "description": "Total capacity managed for recover_point.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "version": {
+            "description": "Version of recover_point.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemVmax": {
+        "description": "Details of the vmax.",
+        "properties": {
+          "cache_size": {
+            "description": "The total size in bytes of the cache in the vmax.",
+            "format": "int32",
+            "type": "integer",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "model": {
+            "description": "Model of the vmax.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          },
+          "serial_number": {
+            "description": "Serial number of the vmax.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_size": {
+            "description": "The total capacity in bytes of the vmax.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_used": {
+            "description": "The total used capacity in bytes of the vmax.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemVproxy": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystemXio": {
+        "description": "Details of the XtremIO.",
+        "properties": {
+          "serial_number": {
+            "description": "Serial number of the XtremIO.",
+            "type": "string",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_size": {
+            "description": "The total capacity in bytes of the XtremIO.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "total_used": {
+            "description": "The used capacity in bytes of the XtremIO.",
+            "format": "double",
+            "type": "number",
+            "x-ppdm-filter": false,
+            "x-ppdm-sort": false
+          },
+          "version": {
+            "description": "Version of XtremIO.",
+            "type": "string",
+            "x-ppdm-filter": true,
+            "x-ppdm-sort": true
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "StorageSystems": {
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/StorageSystem"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SystemHealthIssue": {
+        "description": "System health issue.",
+        "properties": {
+          "component_id": {
+            "description": "System component identifier.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "component_name": {
+            "description": "System component name.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "component_type": {
+            "$ref": "#/components/schemas/HealthComponentType"
+          },
+          "detailed_description": {
+            "description": "The detailed description of the alert message.",
+            "type": "string"
+          },
+          "health_category": {
+            "$ref": "#/components/schemas/HealthCategoryType"
+          },
+          "id": {
+            "description": "Health issue identifier.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "description": "The message that the variable values are substituted with message arguments.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "message_args": {
+            "description": "The alert message arguments are the values for any substitution variables that are defined as part of the message.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "message_id": {
+            "description": "The unique message id.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "metric_group_id": {
+            "description": "The associated health metric group identifier.",
+            "type": "string"
+          },
+          "posted_time": {
+            "description": "The created time of the alert message.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "response_action": {
+            "description": "The response action for this alert message.",
+            "type": "string"
+          },
+          "score_deduction": {
+            "description": "Score deduction.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/HealthIssueSeverity"
+          }
+        },
+        "required": [
+          "id",
+          "component_id",
+          "component_type",
+          "component_name",
+          "health_category",
+          "score_deduction",
+          "message_id",
+          "message",
+          "response_action",
+          "posted_time",
+          "metric_group_id",
+          "message_args"
+        ],
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SystemHealthIssues": {
+        "description": "System health issues collection.",
+        "properties": {
+          "paging": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SystemHealthIssue"
+            },
+            "type": "array"
+          }
+        },
+        "title": "SystemHealthIssues",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SystemHealthScoreCategories": {
+        "description": "Health score categories summary.",
+        "properties": {
+          "health_score_categories": {
+            "items": {
+              "$ref": "#/components/schemas/SystemHealthScoreCategory"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "health_score_categories"
+        ],
+        "title": "SystemHealthScoreCategories",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "SystemHealthScoreCategory": {
+        "description": "Health score category.",
+        "properties": {
+          "health_status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "range_end": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "range_start": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "health_status",
+          "range_start",
+          "range_end"
+        ],
+        "title": "SystemHealthScoreCategory.",
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ThrottlingInfo": {
+        "description": "Provides details of the throttling that is performed during activity execution.",
+        "properties": {
+          "triggered": {
+            "description": "Indicates if throttling was performed for an activity in either the PowerProtect agent service or application.",
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "TierType": {
+        "description": "Tier type of the PowerProtect DD system.",
+        "enum": [
+          "ACTIVE",
+          "CLOUD",
+          "COMBINED"
+        ],
+        "title": "TierType",
+        "type": "string",
+        "x-ppdm-filter": true,
+        "x-ppdm-sort": true
+      },
+      "UserNote": {
+        "description": "The user notes on a message.",
+        "properties": {
+          "note": {
+            "description": "The custom text note on the message.",
+            "type": "string"
+          },
+          "updated_time": {
+            "description": "The time that note is updated. Follows ISO 8601.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "username": {
+            "description": "The name of the user who added or updated the notes.",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
+      },
+      "MFAFactorTypeEnum": {
+        "description": "Factor types for MFA interactions.\n* SECURID - A SecurID token value. second_factor (the token) \n  should be passed with this this type in request.\n* SECURID_NEXT_TOKEN - A SecurID token value, used when SecurID \n  requests a second token. second_factor (the token) should be \n  passed with this this type in request.\n* email - A code value from an email. First request passes just \n  this type, and second request has both type and the value from \n  the resulting email.\n* TEXT - A code value from a text message. First request passes \n  just this type, and second request has both type and the value \n  from the resulting text message.\n* PHONE - A code value from a phone call. First request passes just \n  this type, and second request has both type and the value from the \n  resulting phone call.\n* TOTP - A code value from google/microsoft authenticator. First \n  request passes just this type, and second request has both type and\n  the value from the resulting google/microsoft authenticator.  \nnote - the necessary text/phone/email address to which the code is \ntransmitted is already associated with the first factor. Never passe \nvia the authentication API.\n",
+        "enum": [
+          "SECURID",
+          "SECURID_NEXT_TOKEN",
+          "EMAIL",
+          "TEXT",
+          "PHONE",
+          "TOTP"
+        ]
+      },
+      "AuthLogin": {
+        "description": "Credentials for login. MFA type and second factor value may be passed \nusing approprate factor types (currently only SECURID) for clients that \ndesire a single step MFA authentication.\n",
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "description": "Username for login.",
+            "type": "string",
+            "maxLength": 63
+          },
+          "password": {
+            "description": "Password for login.",
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 127,
+            "pattern": "^[a-zA-Z0-9!@#$%^&*]{8,63}$"
+          },
+          "factor_type": {
+            "$ref": "#/components/schemas/MFAFactorTypeEnum"
+          },
+          "factor_value": {
+            "description": "When MFA is supported, this is the input field for the second factor \nvalue used to authenticate. This is useful for a client that can supply \nboth password and second factor with no intermediate steps. factor_type \nis required when this is passed.\n",
+            "type": "string",
+            "format": "password",
+            "maxLength": 127
+          }
+        },
+        "additionalProperties": false
+      },
+      "MFAResponseInfo": {
+        "description": "When an MFA login sequence is not complete, this describes the \nvalid next step required from client.\n",
+        "type": "object",
+        "properties": {
+          "temporary_token": {
+            "description": "Temporary token used to identify the in-progress MFA login sequence.\nPass this into subsequent request.\n",
+            "type": "string",
+            "maxLength": 255
+          },
+          "username": {
+            "description": "Username for login. This is a convenience for the client.",
+            "type": "string",
+            "maxLength": 63
+          },
+          "valid_factor_types": {
+            "description": "Allowable factor types for the next request.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MFAFactorTypeEnum"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuthLoginResponse": {
+        "description": "Login response, containing an access token, which is used for future \nrequest authorization.\n",
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "description": "The access_token is a signed JWT containing (list the attributes, including \nidentity and list of roles, which are nonstandard but generated and consumed \nby product so ok).\n",
+            "type": "string"
+          },
+          "refresh_token": {
+            "description": "The refresh_token is a signed JWT, including identity and roles, for secure\naccess token renewal.\n",
+            "type": "string"
+          },
+          "expires_in": {
+            "description": "Time in seconds from access token creation until expiration.",
+            "type": "integer",
+            "format": "int32",
+            "x-units": "SECOND",
+            "minimum": 1,
+            "maximum": 3600,
+            "default": 300,
+            "example": 300
+          },
+          "mfa_info": {
+            "$ref": "#/components/schemas/MFAResponseInfo"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "A standard response body used for all non-2xx REST responses.",
+        "properties": {
+          "http_status_code": {
+            "$ref": "#/components/schemas/HTTPStatusEnum"
+          },
+          "messages": {
+            "description": "A list of messages describing the failure encountered by \nthis request. At least one will be of error severity because \nInfo and Warning conditions do not cause the request to fail.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IamErrorMessage"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "HTTPStatusEnum": {
+        "type": "integer",
+        "description": "Possible HTTP status values of completed or failed jobs.\n* 200 - ok - Successful completion, with a response body.\n* 201 - Created - Successful completion of a create request (POST to collection resource).\n* 202 - Accepted - Job has been started. Response body is a job resource instance. Response status and body are available from job when it completes.\n* 204 - No content - Successful completion, without a response body.\n* 206 - Partial content - Paged response to a collection query.\n* 299 - completed with messages - Core request completed but has messages for client. Ancillary portions of request may have failed. Few requests should be able to return this, as the intent is for requests to be atomic - to either succeed or roll back on failure.\n* 400 - Invalid Request - The request is incorrect. To the extent possible, validate requests up front and use this code. details in the response body.\n* 401 - Unauthorized - The request cannot be authenticated.\n* 403 - Forbidden - The request is not allowed for this client.\n* 404 - Not Found - The id value in the request URL is not valid.\n* 422 - Operation failed - The request failed during execution.\n* 429 - Too Many Requests - This particular client needs to slow down and take it easy. Retry after a delay.\n* 500 - Internal error - This means the product has a bug and customer should contact support.\n* 503 - Service Unavailable - The service is temporarily unavailable. Try again later.",
+        "enum": [
+          200,
+          201,
+          202,
+          204,
+          206,
+          299,
+          400,
+          401,
+          403,
+          404,
+          422,
+          429,
+          500,
+          503
+        ]
+      },
+      "IamErrorMessage": {
+        "type": "object",
+        "description": "A message describing the failure, a contributing factor to the failure, or possibly the aftermath of the failure.",
+        "properties": {
+          "severity": {
+            "$ref": "#/components/schemas/SeverityEnum"
+          },
+          "code": {
+            "type": "string",
+            "description": "Identifier for this kind of message. This is a string \nthat can be used to look up additional information on \nthe support website. (note - specific format can be \ndetermined by platform - hex value codes are common \nin midrange storage.)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Message string."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time at which the error occurred."
+          },
+          "message_l_10_n": {
+            "type": "string",
+            "description": "Localized message string.",
+            "x-internal-description": "Required, only when l10n supported."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of error."
+          },
+          "arguments": {
+            "description": "Ordered list of substitution args for the error message. Must match up with the {.}, {/}, etc... actually in the message referenced by the message code above, if any.",
+            "x-internal-description": "Optional, if l10n supported.",
+            "type": "array",
+            "x-visibility": "engineering",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SeverityEnum": {
+        "type": "string",
+        "description": "The severity of the condition.\n* INFO - Information that may be of use in understanding the \n  failure. It is not a problem to fix.\n* WARNING - A condition that isn't a failure, but may be \n  unexpected or a contributing factor. It may be necessary to \n  fix the condition to successfully retry the request.\n* error - An actual failure condition through which the \n  request could not continue.\n* CRITICAL - A failure with significant impact to the system. \n  Normally failed commands roll back and are just error, \n  but may be used for exceptional cases.",
+        "enum": [
+          "INFO",
+          "WARNING",
+          "ERROR",
+          "CRITICAL"
+        ]
+      },
+      "ErrorMessage": {
+        "x-bff-source": "$['components']['schemas']['ErrorMessage']",
+        "description": "The PowerAPI error message.",
+        "type": "object",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.schemas.ErrorMessage",
+          "$.components.schemas.['Error.v1']"
+        ],
+        "x-bff-mapping": "mapError",
+        "properties": {
+          "http_status_code": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "severity": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "message_l10n": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageInfo": {
+        "x-bff-source": "$['components']['schemas']['PageInfo']",
+        "description": "The page information.",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.schemas.PageInfo"
+        ],
+        "type": "object",
+        "properties": {
+          "total_instances": {
+            "description": "The number of instances in the complete queried collection (not just the size of the current response). If the request was filtered, then this is the size of the complete filtered collection.",
+            "type": "integer",
+            "x-units": "COUNT"
+          },
+          "first": {
+            "description": "The URI to access first page.",
+            "type": "string"
+          },
+          "last": {
+            "description": "The URI to access last page.",
+            "type": "string"
+          },
+          "next": {
+            "description": "The URI to access next page.",
+            "type": "string"
+          },
+          "prev": {
+            "description": "The URI to access previous page.",
+            "type": "string"
+          },
+          "resume_token": {
+            "description": "The resume token. Only used for serial query.",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "parameters": {
+      "filter": {
+        "x-bff-source": "$['components']['parameters']['filter']",
+        "allowEmptyValue": true,
+        "description": "Filter result, see more under Task: Sort, filter, and page the result",
+        "in": "query",
+        "name": "filter",
+        "schema": {
+          "type": "string"
+        },
+        "x-bff-op": "assign",
+        "x-bff-paths": [
+          "$.components.parameters.filter",
+          "$.paths..parameters[?(@.name===\"filter\")]"
+        ],
+        "x-bff-mapping": "filter",
+        "allowReserved": true
+      },
+      "order": {
+        "x-bff-source": "$['components']['parameters']['orderby']",
+        "allowEmptyValue": true,
+        "allowReserved": true,
+        "description": "The attributes and fields to sort by. This parameter can combine with sort direction \".asc\" or \".dsc\". Default direction is .asc.",
+        "in": "query",
+        "name": "order",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.parameters.orderby",
+          "$.paths..parameters[?(@.name===\"orderby\")]"
+        ],
+        "x-bff-mapping": "order",
+        "schema": {
+          "type": "string",
+          "pattern": "([a-zA-Z0-9_-]+(\\.[a|d]sc)?)(\\s*,\\s*[a-zA-Z0-9_-]+(\\.[a|d]sc)?)*"
+        }
+      },
+      "limit": {
+        "x-bff-source": "$['components']['parameters']['pageSize']",
+        "allowEmptyValue": true,
+        "description": "The number of resources to be returned in a page. Must not be less than 1.",
+        "in": "query",
+        "name": "limit",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.parameters.pageSize",
+          "$.paths..parameters[?(@.name===\"pageSize\")]"
+        ],
+        "schema": {
+          "default": 100,
+          "maximum": 10000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "offset": {
+        "x-bff-source": "$['components']['parameters']['page']",
+        "allowEmptyValue": true,
+        "description": "The offset during random access.",
+        "in": "query",
+        "name": "offset",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.parameters.page",
+          "$.paths..parameters[?(@.name===\"page\")]"
+        ],
+        "schema": {
+          "default": 0,
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "resume_token": {
+        "x-bff-source": "$['components']['parameters']['queryState']",
+        "allowEmptyValue": true,
+        "description": "The resume token to use during serial access.",
+        "x-bff-op": "replace",
+        "x-bff-paths": [
+          "$.components.parameters.queryState",
+          "$.paths..parameters[?(@.name===\"queryState\")]"
+        ],
+        "in": "query",
+        "name": "resume-token",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "bearerFormat": "JWT",
+        "description": "For accessing the API, a valid JWT token must be passed in all the queries in the 'authorization' header with the 'Bearer' HTTP authorization schema: \n\n\t'authorization: Bearer <JWT_token>'",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    },
+    "responses": {
+      "Code400": {
+        "description": "Invalid Request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Code401": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Code204": {
+        "description": "No content"
+      }
+    }
+  },
+  "x-version": "2.17.0-SNAPSHOT"
+}
